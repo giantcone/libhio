@@ -43,3 +43,4 @@ src/json
 libhio.pc
 cscope.out
 .dirstamp
+*.mod      
