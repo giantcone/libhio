@@ -1,4 +1,4 @@
-# -*- mode: shell-script-mode -*-
+# -*- mode: shell-script -*-
 #
 # Copyright (c) 2014-2018 Los Alamos National Security, LLC. All rights
 #                         reserved.
@@ -16,6 +16,7 @@ AC_CONFIG_HEADERS([src/include/hio_config.h])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CHECK_PROG(MPICC, [mpicc], [mpicc], [none])
 AC_CHECK_PROG(MPICXX, [mpicxx], [mpicxx], [none])
+AC_CHECK_PROG(MPIFC, [mpif90], [mpif90], [none])
 AM_SILENT_RULES([yes])
 
 hio_use_mpi=0
@@ -28,9 +29,11 @@ if ( test -n "$XTOS_VERSION" || test -n "$CRAYPE_DIR" ) && (test -z $CC || test 
     if test x$PE_VERSION = x4 ; then
         CC="cc -target=native -dynamic"
         CXX="CC -target=native -dynamic"
+        FC="ftn -target=native -dynamic"
     else
         CC="cc --cray-bypass-pkgconfig -dynamic"
         CXX="CC --cray-bypass-pkgconfig -dynamic"
+        FC="ftn --cray-bypass-pkgconfig -dynamic"
     fi
     # We may be cross-compiling so trick configure
     cross_compiling=yes
@@ -40,6 +43,7 @@ if ( test -n "$XTOS_VERSION" || test -n "$CRAYPE_DIR" ) && (test -z $CC || test 
 elif test ${MPICC} = "mpicc" ; then
     CC=${MPICC}
     CXX=${MPICXX}
+    FC=${MPIFC}
     hio_use_mpi=1
 fi
 
@@ -125,6 +129,27 @@ AM_CONDITIONAL([ENABLE_TESTS], [test $hio_enable_tests = yes])
 AC_SUBST([HIO_PKGCONFIG_REQUIRES], [$hio_pkgconfig_requires])
 
 AC_SUBST(HIO_BUILD_TIMESTAMP,[$(date "+%A %B %d, %Y at %l:%M %p %Z")])
+
+# Check if Fortran interface is desired. This section was inspired by the 'configure.ac' used by the
+# HDF5 library pacakge written by HDFGroup
+AC_SUBST([HIO_FORTRAN])
+
+# Default is no Fortran
+HIO_FORTRAN=no
+AC_MSG_CHECKING([if Fortran interface enabled])
+AC_ARG_ENABLE([fortran],
+              [AS_HELP_STRING([--enable-fortran],
+                              [Compile the Fortran interface [default=no]])],
+              [HIO_FORTRAN=$enableval])
+
+# Following should place the resulting Fortran libHIO interface module in the correct place.
+if test "X$HIO_FORTRAN" = "Xyes"; then
+  AC_FC_MODULE_OUTPUT_FLAG
+  AC_FCFLAGS = $(FC_MODOUT) ./include
+fi
+
+
+# end Fortran interface section
 
 # Checks for library functions.
 

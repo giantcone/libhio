@@ -10,8 +10,7 @@
 ! provided in C.  I think the best way to deal with this Fortran-C interoper-
 ! ability is to present as little as possible to this fortran code, and then have
 ! a go-between handle code in C that has an explicit Fortran procedure interface
-! defined in this module, and returns what is needed by the "vanilla" HDF5 
-! program.
+! defined in this module.
 !
 ! For those C functions that take a character type argument, there will need to
 ! be intermediate handle functions that properly modify the Fortran character
@@ -25,42 +24,25 @@ use mpi
 #endif
 implicit none
 
-private
+!private
 
 !#define HIO_FILE_NAME_SIZE 1024
 !#define HIO_ELEM_NAME_SIZE 256
 !#define HIO_CONFIG_FILE_SIZE 128
 !#define HIO_CONFIG_PREFIX_SIZE 256
 
-! Opaque data structures (taken from 'hio.h')
-! I'm uncertain about how to properly define these 'opaque types' here as in the
-! C header file they are defined in the following fashion:
+! A note about the "opaque data structures" used in 'hio.h':
 !
 !   typedef struct hio_STUFF *hio_STUFF_t;
 !
-! So these C types are all C pointers as well? I may need to change how these 
-! interfaces are created...
-
-! type,bind(c) :: hio_context_t
-! end type hio_context_t
-
-! type,bind(c) :: hio_dataset_t
-! end type hio_dataset_t
-
-! type,bind(c) :: hio_element_t
-! end type hio_element_t
-
-! type,bind(c) :: hio_request_t
-! end type hio_request_t
-
-! type,bind(c) :: hio_object_t
-! end type hio_object_t
-
-! I believe all the above "types" really don't matter in Fortran and can just be
-! treated as C pointers to an "opaque stuctured datatype" using the type(c_ptr)
-! for defining the argument of the Fortran-C interface.
+! In Fortran, these type of structure pointer are treated as C pointers to an
+! "opaque stuctured datatype" using the type(c_ptr)[,value] shown in the argument list
+! of some of the interface definitions below.
 
 
+! The HIO Enumerated types are defined here for convenience and to keep in line
+! with those defined in the C header file
+!
 ! 'hio_return_t' enumerated type
 !
 ! HINT: To define a type in Fortran that makes use of this enumeration,
@@ -290,17 +272,18 @@ interface
 
    integer(kind(HIO_SUCCESS)) &
    function hio_dataset_get_id(dset, set_id) bind(c)
-     import :: c_int64_t
+     import :: c_ptr, c_int64_t
+     type(c_ptr),value          :: dset
      integer(kind=c_int64_t)    :: set_id
    end function hio_dataset_get_id
 
    integer(kind(HIO_SUCCESS)) &
    function hio_dataset_unlink(context, name, set_id, mode) bind(c)
-     import :: HIO_UNLINK_MODE_ALL, c_ptr, c_char, c_int64_t
-     type(c_ptr),value                   :: context
-     character(kind=c_char),dimension(*) :: name
-     integer(kind=c_int64_t)             :: set_id
-     integer(kind(HIO_UNLINK_MODE_ALL))  :: mode
+     import :: c_ptr, c_char, c_int64_t, HIO_UNLINK_MODE_ALL
+     type(c_ptr),value                        :: context
+     character(kind=c_char),dimension(*)      :: name
+     integer(kind=c_int64_t), value           :: set_id
+     integer(kind(HIO_UNLINK_MODE_ALL)),value :: mode
    end function hio_dataset_unlink
 
    integer(kind(HIO_SUCCESS)) &
@@ -309,7 +292,7 @@ interface
      type(c_ptr),value                   :: dset
      type(c_ptr)                         :: elem_out
      character(kind=c_char),dimension(*) :: name
-     integer(kind=c_int)                 :: flags
+     integer(kind=c_int),value           :: flags
    end function hio_element_open
 
    integer(kind(HIO_SUCCESS)) &
@@ -359,8 +342,8 @@ interface
    integer(kind(HIO_SUCCESS)) &
    function hio_dataset_should_checkpoint(context, name) bind(c)
      import :: c_ptr, c_char
-     type(c_ptr),value      :: context
-     character(kind=c_char) :: name
+     type(c_ptr),value                   :: context
+     character(kind=c_char),dimension(*) :: name
    end function hio_dataset_should_checkpoint
 
    integer(kind(HIO_SUCCESS)) &
@@ -371,6 +354,15 @@ interface
      character(kind=c_char),dimension(*) :: strval
    end function hio_config_set_value
 
+   integer(kind(HIO_SUCCESS)) &
+   function hio_config_get_value(object, variable, strval) bind(c)
+     import :: c_ptr, c_char
+     type(c_ptr),value                   :: object
+     character(kind=c_char),dimension(*) :: variable
+     type(c_ptr)                         :: strval
+   end function hio_config_get_value
+   
+   
    integer(kind(HIO_SUCCESS)) &
    function hio_config_get_count(object, count) bind(c)
      import :: c_ptr, c_int
@@ -431,7 +423,7 @@ abstract interface
      type(c_ptr),value          :: dset
    end function hio_dataset_opcl
    
-   integer(kind(HIO_SUCCESS)) &
+   integer(c_size_t) &
    function hio_element_rw(element, offset, reserved0, ptr, count, size) bind(c)
    import :: c_int64_t, c_long, c_ptr, c_size_t
      type(c_ptr), value            :: element
@@ -454,7 +446,7 @@ abstract interface
      integer(kind=c_size_t),value  :: size
    end function hio_element_rw_nb
 
-   integer(kind(HIO_SUCCESS)) &
+   integer(c_size_t) &
    function hio_element_rw_strided(element, offset, reserved0, ptr, count, size, stride) bind(c)
      import :: c_ptr, c_long, c_int64_t, c_size_t
      type(c_ptr), value            :: element
