@@ -144,8 +144,11 @@ AC_ARG_ENABLE([fortran],
 
 # Following should place the resulting Fortran libHIO interface module in the correct place.
 if test "X$HIO_FORTRAN" = "Xyes"; then
-  AC_FC_MODULE_OUTPUT_FLAG
-  AC_FCFLAGS = $(FC_MODOUT) ./include
+#  AC_FC_MODULE_OUTPUT_FLAG
+  AC_PROG_FC([gfortran mpifort ftn])
+  AC_FC_MODULE_OUTPUT_FLAG([FCFLAGS="$FC_MODOUT include"],[])
+#  AS_IF([$hio_use_mpi], [AM_FCFLAGS=-DHIO_USE_MPI])
+#  AC_FCFLAGS = $(FC_MODOUT) ./include
 fi
 
 

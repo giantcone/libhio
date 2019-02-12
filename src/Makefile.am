@@ -16,7 +16,7 @@ CLEANFILES = libconfig_parser_a-config_parser.c
 
 lib_LTLIBRARIES = libhio.la
 
-include_HEADERS = include/hio.h
+include_HEADERS = include/hio.h include/hio.mod
 noinst_HEADERS = include/config_parser.h include/hio_internal.h \
 	include/hio_types.h include/hio_var.h include/hio_component.h \
 	builtin-posix_component.h manifest/hio_manifest.h
@@ -35,7 +35,8 @@ libhio_la_SOURCES = hio_context.c hio_component.c hio_var.c hio_crc.c \
 	api/dataset_close.c api/element_open.c api/element_close.c api/element_write.c \
 	api/element_read.c api/dataset_unlink.c api/dataset_get_id.c \
 	api/element_size.c api/dataset_alloc.c api/object_name.c \
-	api/dataset_checkpoint.c libconfig_parser_a-config_parser.c
+	api/dataset_checkpoint.c libconfig_parser_a-config_parser.c \
+	hio_ftn_iface.F90
 libhio_la_LIBADD=
 if INTERNAL_JSON_C
 # just link in the json objects directly
